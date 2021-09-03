@@ -41,9 +41,48 @@ def creata_country(country):
             coordinates = section[0]
         face_start = len(vertices)
 
-        for x, y in coordinates:
-            vertices.append(sph2euc(100.0, rad(x), rad(y-90)))
+        for part in coordinates:
+            if len(part) == 2:
+                x = part[0]
+                y = part[1]
+                vertices.append(sph2euc(100.0, rad(x), rad(y-90)))
+            else:
+                for x,y in part:
+                    vertices.append(sph2euc(100.0, rad(x), rad(y-90)))
 
         faces.append(list(range(face_start,len(vertices))))
 
     mesh.from_pydata(vertices, edges, faces)
+
+    bpy.ops.object.editmode_toggle()
+    bpy.ops.mesh.flip_normals()
+    bpy.ops.mesh.extrude_region_shrink_fatten(
+        MESH_OT_extrude_region={
+            "use_normal_flip":False,
+            "use_dissolve_ortho_edges":False,
+            "mirror":False},
+        TRANSFORM_OT_shrink_fatten={
+            "value":5.0,
+            "use_even_offset":False,
+            "mirror":False,
+            "use_proportional_edit":False,
+            "proportional_edit_falloff":'SMOOTH',
+            "proportional_size":1,
+            "use_proportional_connected":False,
+            "use_proportional_projected":False,
+            "snap":False,
+            "snap_target":'CLOSEST',
+            "snap_point":(0, 0, 0),
+            "snap_align":False,
+            "snap_normal":(0, 0, 0),
+            "release_confirm":True,
+            "use_accurate":False}
+        )
+
+    bpy.ops.object.editmode_toggle()
+
+
+shape = fiona.open("/home/zwan/Documents/world/TM_WORLD_BORDERS-0.3/TM_WORLD_BORDERS-0.3.shp")
+
+for country in shape:
+    creata_country(country)
