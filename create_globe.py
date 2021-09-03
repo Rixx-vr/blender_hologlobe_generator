@@ -3,6 +3,7 @@ from mathutils import *
 from math import *
 
 import fiona
+import os
 
 C = bpy.context
 D = bpy.data
@@ -82,7 +83,7 @@ def creata_country(country):
     bpy.ops.object.editmode_toggle()
 
 
-shape = fiona.open("/home/zwan/Documents/world/TM_WORLD_BORDERS-0.3/TM_WORLD_BORDERS-0.3.shp")
+shape = fiona.open(os.path.join(os.getcwd(), "TM_WORLD_BORDERS-0.3.shp"))
 
 for country in shape:
     creata_country(country)
