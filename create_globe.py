@@ -2,6 +2,8 @@ import bpy
 from mathutils import *
 from math import *
 
+import bmesh
+
 import fiona
 import os
 
@@ -23,7 +25,7 @@ def creata_country(country):
     mesh = D.meshes.new(name)
     object = D.objects.new(mesh.name, mesh)
 
-    add_material(object, name, 0, 1, 0, 1)
+    add_material(object, name, 0, 0.6, 1, 0.25)
 
     collection = D.collections.get("Collection")
     collection.objects.link(object)
@@ -53,19 +55,48 @@ def creata_country(country):
 
     mesh.from_pydata(vertices, edges, faces)
 
-    bpy.ops.object.modifier_add(type='TRIANGULATE')
-    bpy.context.object.modifiers["Triangulate"].quad_method = 'BEAUTY'
-    bpy.ops.object.modifier_apply(modifier="Triangulate")
-
     bpy.ops.object.editmode_toggle()
+    bpy.ops.mesh.select_all(action='SELECT')
     bpy.ops.mesh.flip_normals()
     bpy.ops.mesh.decimate(ratio=0.2)
+    bpy.ops.transform.edge_crease(value=1)
+    bpy.ops.object.editmode_toggle()
+
+    bpy.ops.object.modifier_add(type='TRIANGULATE')
+    bpy.ops.object.modifier_apply(modifier="Triangulate")
+
+    if get_size() > 2000:
+        bpy.ops.object.modifier_add(type='SUBSURF')
+        bpy.context.object.modifiers["Subdivision"].show_only_control_edges = False
+        bpy.context.object.modifiers["Subdivision"].render_levels = 1
+        bpy.ops.object.modifier_add(type='DECIMATE')
+        bpy.context.object.modifiers["Decimate"].ratio = 0.4
+        bpy.ops.object.modifier_apply(modifier="Subdivision")
+        bpy.ops.object.modifier_apply(modifier="Decimate")
+        normalize_verts()
 
     extrude()
     add_shapekeys()
 
 
+
+
+def get_size():
+    obj = bpy.context.active_object
+
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+
+    area = sum(f.calc_area() for f in bm.faces)
+
+    bm.free()
+
+    return area
+
+
 def extrude():
+    bpy.ops.object.editmode_toggle()
+    bpy.ops.mesh.select_all(action='SELECT')
     bpy.ops.mesh.extrude_region_shrink_fatten(
         MESH_OT_extrude_region={
             "use_normal_flip":False,
@@ -88,26 +119,41 @@ def extrude():
             "release_confirm":True,
             "use_accurate":False}
         )
+    bpy.ops.object.editmode_toggle()
 
 
+#bpy.ops.mesh.faces_shade_smooth()
 def add_shapekeys():
-    bpy.ops.object.editmode_toggle()
+
     bpy.ops.object.shape_key_add(from_mix=False)
     bpy.ops.object.shape_key_add(from_mix=False)
 
     bpy.ops.object.editmode_toggle()
-    bpy.ops.transform.translate(value=(0, 0, 25.0),
+    bpy.ops.transform.translate(
+        value=(0, 0, 25.0),
         orient_type='NORMAL',
         orient_matrix_type='NORMAL',
         constraint_axis=(False, False, True),
-        mirror=True,
-        use_proportional_edit=True,
-        proportional_edit_falloff='SMOOTH',
-        proportional_size=1,
-        use_proportional_connected=False,
-        use_proportional_projected=False)
+        mirror=False,
+        use_proportional_edit=False,
+        use_accurate=True)
 
+
+
+
+    #bpy.ops.mesh.delete_loose(use_faces=True)
     bpy.ops.object.editmode_toggle()
+
+
+    #sk_basis = object.shape_key_add('Basis')
+    #sk_basis.interpolation = 'KEY_LINEAR'
+    #object.data.shape_keys.use_relative = False
+
+    #sk = object.shape_key_add('Deform')
+#    sk.interpolation = 'KEY_LINEAR'
+
+    #for i in range(len(verts)):
+     #   sk.data[i].co.z *= data[i][2]
 
 
 def add_material(object, name, r, g, b, a):
@@ -129,9 +175,19 @@ def add_sphere():
     add_material(C.selected_objects[0], "Globe", 0, 0, 1, 1)
 
 
+def normalize_verts():
+    ref = 100.0
+
+    for v in C.active_object.data.vertices:
+        len = v.co.length
+        v.co *= (ref/len)
+
 shape = fiona.open(os.path.join(os.getcwd(), "TM_WORLD_BORDERS-0.3.shp"))
 
 for country in shape:
+    #try:
     creata_country(country)
 
 add_sphere()
+    #except:
+    #    pass
