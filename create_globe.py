@@ -139,21 +139,7 @@ def add_shapekeys():
         use_accurate=True)
 
 
-
-
-    #bpy.ops.mesh.delete_loose(use_faces=True)
     bpy.ops.object.editmode_toggle()
-
-
-    #sk_basis = object.shape_key_add('Basis')
-    #sk_basis.interpolation = 'KEY_LINEAR'
-    #object.data.shape_keys.use_relative = False
-
-    #sk = object.shape_key_add('Deform')
-#    sk.interpolation = 'KEY_LINEAR'
-
-    #for i in range(len(verts)):
-     #   sk.data[i].co.z *= data[i][2]
 
 
 def add_material(object, name, r, g, b, a):
@@ -185,9 +171,8 @@ def normalize_verts():
 shape = fiona.open(os.path.join(os.getcwd(), "TM_WORLD_BORDERS-0.3.shp"))
 
 for country in shape:
-    #try:
     creata_country(country)
 
 add_sphere()
-    #except:
-    #    pass
+
+
